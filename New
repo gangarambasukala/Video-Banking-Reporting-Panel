@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Banking Weekly Reporting Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Header -->
+    <header class="bg-blue-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-800 p-2.5 rounded-lg border border-blue-700">
+                    <i class="fa-solid fa-video text-2xl text-blue-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Video Banking Weekly Reporting Panel</h1>
+                    <p class="text-xs text-blue-200">Central Operations Department</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span id="roleBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm">
+                    <i class="fa-solid fa-user-shield mr-1"></i> Admin Mode
+                </span>
+                <button id="adminToggleBtn" onclick="toggleAdminModal()" class="bg-blue-800 hover:bg-blue-700 text-xs px-3 py-2 rounded-lg font-medium transition border border-blue-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock"></i> <span id="adminBtnText">Admin Logout</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Controls & Filters Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Date Range Filter</label>
+                    <select id="dateRangeFilter" onchange="handleDateRangeChange()" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="last_week">Last Week (Sun - Sat)</option>
+                        <option value="all">All Dates / Complete Period</option>
+                    </select>
+                </div>
+                <div id="customDateInputs" class="hidden flex items-center gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">From Date</label>
+                        <input type="date" id="filterFromDate" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">To Date</label>
+                        <input type="date" id="filterToDate" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm">
+                    </div>
+                    <button onclick="applyCustomDateFilter()" class="mt-5 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-filter mr-1"></i> Execute
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Action Buttons -->
+            <div id="adminActionButtons" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                <button onclick="openJsonTemplateModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-medium transition border border-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-code"></i> JSON Template
+                </button>
+                <label class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-file-arrow-up"></i> Upload JSON Logs
+                    <input type="file" id="jsonUploadInput" accept=".json" class="hidden" onchange="handleJsonUpload(event)">
+                </label>
+                <button onclick="openLogEntryModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-plus"></i> Log Entry
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Video Calls</p>
+                    <h3 id="kpiTotalCalls" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-lg text-blue-600"><i class="fa-solid fa-headset text-lg"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Successful Handled</p>
+                    <h3 id="kpiSuccessful" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-lg text-emerald-600"><i class="fa-solid fa-circle-check text-lg"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Outage Incidents</p>
+                    <h3 id="kpiOutages" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-lg text-rose-600"><i class="fa-solid fa-triangle-exclamation text-lg"></i></div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Avg Service Time</p>
+                    <h3 id="kpiAvgTime" class="text-2xl font-bold text-indigo-600 mt-1">4.2m</h3>
+                </div>
+                <div class="bg-indigo-50 p-3 rounded-lg text-indigo-600"><i class="fa-solid fa-clock text-lg"></i></div>
+            </div>
+        </div>
+
+        <!-- Section 1: Operational Task Logs -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-blue-600"></i> Operational Task Logs
+                </h2>
+                <span id="taskCountBadge" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-medium">0 entries</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                            <th class="px-6 py-3">Date</th>
+                            <th class="px-6 py-3">Task / Activity Name</th>
+                            <th class="px-6 py-3">Category</th>
+                            <th class="px-6 py-3">Status</th>
+                            <th class="px-6 py-3">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="operationalLogsTableBody" class="divide-y divide-slate-200 text-sm">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: Portal Improvements -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-rocket text-blue-600"></i> Proposed & Ongoing Tasks for Video Banking Portal Improvement
+                </h2>
+                <button id="addPortalTaskBtn" onclick="openPortalModal()" class="hidden bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition">
+                    <i class="fa-solid fa-plus mr-1"></i> Add Improvement Task
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                            <th class="px-6 py-3">Initiative / Task</th>
+                            <th class="px-6 py-3">Responsible Department</th>
+                            <th class="px-6 py-3">Target Date</th>
+                            <th class="px-6 py-3">Status</th>
+                            <th class="px-6 py-3 admin-col hidden">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portalImprovementTableBody" class="divide-y divide-slate-200 text-sm">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: System Disruptions -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-rose-600"></i> System Disruptions & Outage Incidents
+                </h2>
+                <button id="addOutageBtn" onclick="openOutageModal()" class="hidden bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition">
+                    <i class="fa-solid fa-plus mr-1"></i> Add Outage Incident
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                            <th class="px-6 py-3">Incident Date</th>
+                            <th class="px-6 py-3">Service / Component</th>
+                            <th class="px-6 py-3">Downtime Duration</th>
+                            <th class="px-6 py-3">Root Cause</th>
+                            <th class="px-6 py-3 admin-col hidden">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outageTableBody" class="divide-y divide-slate-200 text-sm">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 4: Observation Remarks & Guest Feedback -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Observation Remarks (Admin only edit) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-clipboard-user text-blue-600"></i> Operational Observation Remarks
+                    </h3>
+                    <div id="observationDisplay" class="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 mb-3 min-h-[80px]">
+                        No remarks saved yet.
+                    </div>
+                    <textarea id="observationInput" rows="3" class="hidden w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none mb-3" placeholder="Enter weekly observation notes..."></textarea>
+                </div>
+                <div id="observationActionContainer" class="hidden flex justify-end">
+                    <button onclick="saveObservation()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> Save Observation Remarks
+                    </button>
+                </div>
+            </div>
+
+            <!-- Guest Feedback & Suggestions (Visible to Guests) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-comments text-emerald-600"></i> Guest Feedback & Suggestions
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-3">Provide feedback or portal suggestions below. Recorded directly into system logs.</p>
+                    <textarea id="guestFeedbackInput" rows="3" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none mb-3" placeholder="Type your suggestions here..."></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button onclick="submitGuestFeedback()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Submit Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-500">
+        Video Banking Weekly Reporting Panel &copy; 2026 - Central Operations Department
+    </footer>
+
+    <!-- Admin Login Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg mb-2"><i class="fa-solid fa-lock text-blue-600 mr-2"></i>Admin Authentication</h3>
+            <p class="text-xs text-slate-500 mb-4">Enter the administrative password to unlock data management controls.</p>
+            <input type="password" id="adminPasswordInput" placeholder="Password" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAdminModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-medium">Cancel</button>
+                <button onclick="verifyAdminPassword()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-medium">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSON Template Modal -->
+    <div id="jsonTemplateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg mb-2"><i class="fa-solid fa-code text-blue-600 mr-2"></i>JSON Import Template</h3>
+            <p class="text-xs text-slate-500 mb-3">Upload or drag-and-drop JSON files matching this exact format:</p>
+            <pre class="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-4 font-mono"><code>{
+  "tasks": [
+    {
+      "date": "2026-09-28",
+      "name": "Video KYC Verification Spike",
+      "category": "Operational",
+      "status": "Completed",
+      "remarks": "Handled smoothly"
+    }
+  ]
+}</code></pre>
+            <div class="flex justify-end">
+                <button onclick="closeJsonTemplateModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-medium">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        let isAdmin = true; // Default admin view
+        let operationalLogs = [
+            { date: "2026-09-30", name: "Morning Peak Queue Management", category: "Queue", status: "Completed", remarks: "All agents active" },
+            { date: "2026-09-29", name: "Core Banking Integration Sync", category: "Technical", status: "Completed", remarks: "Latency resolved" },
+            { date: "2026-09-28", name: "Video KYC Verification Spike", category: "Compliance", status: "Completed", remarks: "Handled smoothly" }
+        ];
+
+        let portalTasks = [
+            { id: 1, name: "Video Feed Latency Optimization", dept: "IT Infrastructure", target: "2026-10-15", status: "In Progress" },
+            { id: 2, name: "Automated Transcript Logging Panel", dept: "Software Development", target: "2026-10-30", status: "Planning" }
+        ];
+
+        let outages = [
+            { id: 1, date: "2026-09-29", component: "Video Gateway Server", duration: "14 mins", cause: "Upstream ISP Maintenance" }
+        ];
+
+        let observationText = "Central operations maintained steady execution across all video banking channels during the week with normal customer satisfaction scores.";
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAll();
+        });
+
+        function toggleAdminModal() {
+            if (isAdmin) {
+                isAdmin = false;
+                updateUIRole();
+            } else {
+                document.getElementById('adminModal').classList.remove('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+            }
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        function verifyAdminPassword() {
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (pass === 'admin') {
+                isAdmin = true;
+                closeAdminModal();
+                updateUIRole();
+            } else {
+                alert('Incorrect password! Use "admin".');
+            }
+        }
+
+        function updateUIRole() {
+            const badge = document.getElementById('roleBadge');
+            const btnText = document.getElementById('adminBtnText');
+            const adminActionBtns = document.getElementById('adminActionButtons');
+            const addPortalBtn = document.getElementById('addPortalTaskBtn');
+            const addOutageBtn = document.getElementById('addOutageBtn');
+            const obsInput = document.getElementById('observationInput');
+            const obsDisplay = document.getElementById('observationDisplay');
+            const obsAction = document.getElementById('observationActionContainer');
+            const adminCols = document.querySelectorAll('.admin-col');
+
+            if (isAdmin) {
+                badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm";
+                badge.innerHTML = '<i class="fa-solid fa-user-shield mr-1"></i> Admin Mode';
+                btnText.textContent = "Admin Logout";
+                adminActionBtns.classList.remove('hidden');
+                addPortalBtn.classList.remove('hidden');
+                addOutageBtn.classList.remove('hidden');
+                obsInput.classList.remove('hidden');
+                obsDisplay.classList.add('hidden');
+                obsAction.classList.remove('hidden');
+                obsInput.value = observationText;
+                adminCols.forEach(el => el.classList.remove('hidden'));
+            } else {
+                badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-blue-700 text-white shadow-sm";
+                badge.innerHTML = '<i class="fa-solid fa-user mr-1"></i> Guest View';
+                btnText.textContent = "Admin Login";
+                adminActionBtns.classList.add('hidden');
+                addPortalBtn.classList.add('hidden');
+                addOutageBtn.classList.add('hidden');
+                obsInput.classList.add('hidden');
+                obsDisplay.classList.remove('hidden');
+                obsAction.classList.add('hidden');
+                obsDisplay.textContent = observationText;
+                adminCols.forEach(el => el.classList.add('hidden'));
+            }
+        }
+
+        function handleDateRangeChange() {
+            const val = document.getElementById('dateRangeFilter').value;
+            const customDiv = document.getElementById('customDateInputs');
+            if (val === 'custom') {
+                customDiv.classList.remove('hidden');
+            } else {
+                customDiv.classList.add('hidden');
+                renderOperationalLogs();
+            }
+        }
+
+        function applyCustomDateFilter() {
+            renderOperationalLogs();
+        }
+
+        function renderAll() {
+            renderOperationalLogs();
+            renderPortalTasks();
+            renderOutages();
+            updateKPIs();
+        }
+
+        function renderOperationalLogs() {
+            const tbody = document.getElementById('operationalLogsTableBody');
+            tbody.innerHTML = '';
+            
+            // Sort recent first
+            let filtered = [...operationalLogs].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            const filterType = document.getElementById('dateRangeFilter').value;
+            if (filterType === 'last_week') {
+                // Strict Sunday to Saturday of previous week relative to Oct 4, 2026
+                filtered = filtered.filter(item => item.date >= '2026-09-20' && item.date <= '2026-09-26');
+            } else if (filterType === 'custom') {
+                const from = document.getElementById('filterFromDate').value;
+                const to = document.getElementById('filterToDate').value;
+                if (from && to) {
+                    filtered = filtered.filter(item => item.date >= from && item.date <= to);
+                }
+            }
+
+            document.getElementById('taskCountBadge').textContent = `${filtered.length} entries`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-slate-400">No operational logs found for the selected filter.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(log => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-3 font-medium text-slate-700">${log.date}</td>
+                        <td class="px-6 py-3 text-slate-800">${log.name}</td>
+                        <td class="px-6 py-3"><span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-medium">${log.category}</span></td>
+                        <td class="px-6 py-3"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-xs font-medium">${log.status}</span></td>
+                        <td class="px-6 py-3 text-slate-500">${log.remarks}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderPortalTasks() {
+            const tbody = document.getElementById('portalImprovementTableBody');
+            tbody.innerHTML = '';
+            portalTasks.forEach(task => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-3 font-medium text-slate-800">${task.name}</td>
+                        <td class="px-6 py-3 text-slate-600">${task.dept}</td>
+                        <td class="px-6 py-3 text-slate-600">${task.target}</td>
+                        <td class="px-6 py-3"><span class="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs font-medium">${task.status}</span></td>
+                        <td class="px-6 py-3 admin-col ${isAdmin ? '' : 'hidden'}">
+                            <button onclick="editPortalTask(${task.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deletePortalTask(${task.id})" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderOutages() {
+            const tbody = document.getElementById('outageTableBody');
+            tbody.innerHTML = '';
+            outages.forEach(o => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-3 font-medium text-slate-700">${o.date}</td>
+                        <td class="px-6 py-3 text-slate-800">${o.component}</td>
+                        <td class="px-6 py-3 text-rose-600 font-semibold">${o.duration}</td>
+                        <td class="px-6 py-3 text-slate-500">${o.cause}</td>
+                        <td class="px-6 py-3 admin-col ${isAdmin ? '' : 'hidden'}">
+                            <button onclick="editOutage(${o.id})" class="text-blue-600 hover:text-blue-800 mr-2"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteOutage(${o.id})" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateKPIs() {
+            document.getElementById('kpiTotalCalls').textContent = '148';
+            document.getElementById('kpiSuccessful').textContent = '142';
+            document.getElementById('kpiOutages').textContent = outages.length;
+        }
+
+        function openJsonTemplateModal() { document.getElementById('jsonTemplateModal').classList.remove('hidden'); }
+        function closeJsonTemplateModal() { document.getElementById('jsonTemplateModal').classList.add('hidden'); }
+
+        function handleJsonUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.tasks && Array.isArray(data.tasks)) {
+                        operationalLogs = data.tasks.concat(operationalLogs);
+                        renderOperationalLogs();
+                        alert('Successfully uploaded and imported task logs!');
+                    } else {
+                        alert('Invalid JSON structure. Please check the template.');
+                    }
+                } catch(err) {
+                    alert('Error parsing JSON file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function openLogEntryModal() {
+            const name = prompt("Enter Task/Activity Name:");
+            if (!name) return;
+            const category = prompt("Enter Category (e.g. Operational, Queue):", "Operational");
+            const remarks = prompt("Enter Remarks:", "Handled successfully");
+            operationalLogs.unshift({
+                date: new Date().toISOString().split('T')[0],
+                name: name,
+                category: category || "Operational",
+                status: "Completed",
+                remarks: remarks || ""
+            });
+            renderOperationalLogs();
+        }
+
+        function openPortalModal() {
+            const name = prompt("Enter Portal Improvement Initiative:");
+            if (!name) return;
+            const dept = prompt("Enter Responsible Department (e.g. IT Infrastructure):", "IT Department");
+            const target = prompt("Enter Target Date (YYYY-MM-DD):", "2026-10-31");
+            portalTasks.push({
+                id: Date.now(),
+                name: name,
+                dept: dept,
+                target: target,
+                status: "Planning"
+            });
+            renderPortalTasks();
+        }
+
+        function editPortalTask(id) {
+            const task = portalTasks.find(t => t.id === id);
+            if (!task) return;
+            const newName = prompt("Edit Task Name:", task.name);
+            if (newName) task.name = newName;
+            renderPortalTasks();
+        }
+
+        function deletePortalTask(id) {
+            if (confirm("Are you sure you want to delete this improvement task?")) {
+                portalTasks = portalTasks.filter(t => t.id !== id);
+                renderPortalTasks();
+            }
+        }
+
+        function openOutageModal() {
+            const component = prompt("Enter Outage Component/Service Name:");
+            if (!component) return;
+            const duration = prompt("Enter Downtime Duration:", "10 mins");
+            const cause = prompt("Enter Root Cause:", "Network jitter");
+            outages.push({
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                component: component,
+                duration: duration,
+                cause: cause
+            });
+            renderOutages();
+            updateKPIs();
+        }
+
+        function editOutage(id) {
+            const o = outages.find(item => item.id === id);
+            if (!o) return;
+            const comp = prompt("Edit Component Name:", o.component);
+            if (comp) o.component = comp;
+            renderOutages();
+        }
+
+        function deleteOutage(id) {
+            if (confirm("Delete this outage incident?")) {
+                outages = outages.filter(item => item.id !== id);
+                renderOutages();
+                updateKPIs();
+            }
+        }
+
+        function saveObservation() {
+            observationText = document.getElementById('observationInput').value;
+            alert('Observation remarks saved successfully!');
+        }
+
+        function submitGuestFeedback() {
+            const feedback = document.getElementById('guestFeedbackInput').value;
+            if (!feedback.trim()) {
+                alert('Please enter your feedback before submitting.');
+                return;
+            }
+            alert('Thank you! Your feedback has been recorded into the system.');
+            document.getElementById('guestFeedbackInput').value = '';
+        }
+    </script>
+</body>
+</html>
